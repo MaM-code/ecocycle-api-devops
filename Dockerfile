@@ -1,17 +1,22 @@
-# Multi-stage build: compila com Maven e executa com JRE leve
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /app
-COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
-RUN chmod +x mvnw
-COPY src ./src
-RUN ./mvnw -B -DskipTests package
 
-FROM eclipse-temurin:17-jre
+# Etapa 1 - Compilar a aplicação
+FROM maven:3.9-eclipse-temurin-17 AS build
+
 WORKDIR /app
-RUN useradd --system --uid 10001 spring
+
+COPY pom.xml .
+
+COPY src ./src
+
+RUN mvn -B clean package -DskipTests
+
+# Etapa 2 - Executar a aplicação
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
 COPY --from=build /app/target/*.jar app.jar
-USER 10001
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
